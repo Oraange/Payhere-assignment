@@ -1,3 +1,5 @@
+import bcrypt
+
 from users.exceptions import DuplicateUser, UserNotFound
 from .dto import SignUpInputDTO
 from .models import User
@@ -13,10 +15,17 @@ class UserService:
         else:
             return user
 
+    def encrypte_password(self, plain_password):
+        hashed_password = bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt())
+        decode_password = hashed_password.decode("utf-8")
+
+        return decode_password
+
     def add_user(self, sign_up_info: SignUpInputDTO):
+
         new_user = User(
             email=sign_up_info.email,
-            password=sign_up_info.password,
+            password=self.encrypte_password(sign_up_info.password),
             nick_name=sign_up_info.nick_name
         )
 
