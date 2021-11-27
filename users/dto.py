@@ -15,5 +15,5 @@ class SignInInputDTO:
 
 
 @dataclass
-class SignInOutputDTO:
+class TokenDTO:
     access_token: str
