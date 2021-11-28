@@ -2,9 +2,9 @@ import bcrypt
 import jwt
 
 from users.exceptions import DuplicateUser, UserNotFound
-from .dto import SignInInputDTO, SignUpInputDTO
+from .dto import SignUpInputDTO
 from .models import User
-from my_settings import SECRET_KEY
+from my_settings import SECRET_KEY, ALGORITHM
 
 
 class SignUpService:
@@ -44,4 +44,4 @@ class TokenGenerator:
         self.sign_in_service = SignInService()
 
     def generate_token(self, user_id):
-        return {"access_token": "Bearer " + jwt.encode({"id": str(user_id)}, SECRET_KEY, "HS256")}
+        return {"access_token": "Bearer " + jwt.encode({"id": str(user_id)}, SECRET_KEY, ALGORITHM)}
