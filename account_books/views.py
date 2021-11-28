@@ -63,7 +63,7 @@ class AccountBookView(View):
             account_books = self.get_service.get_account_book_list(user, params)
 
         except AccountBookNotFound:
-            return JsonResponse({"message": "ACCOUNT_BOOK_DOES_NOT_EXIST"}, status=404)
+            return JsonResponse({"message": "ACCOUNT_BOOKS_DO_NOT_EXIST"}, status=404)
 
         except ValueError:
             return JsonResponse({"message": "PARAMETER_ERROR"}, status=400)
@@ -83,8 +83,7 @@ class AccountBookView(View):
                             "memo": book.memo
                         } for book in account_books.account_books
                     ]
-                }
-            )
+                }, status=200)
 
 class AccountBookDetailView(View):
     def __init__(self, **kwargs):
