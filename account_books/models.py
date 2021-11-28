@@ -29,5 +29,28 @@ class AccountBook(TimeStamp):
         return False
 
     @classmethod
+    def get_list_by_user_id(cls, user):
+        if not cls.objects.filter(user=user).exists():
+            return None
+
+        return cls.objects.filter(user=user)
+
+    @classmethod
+    def get_active_by_id(cls, book_id):
+        try:
+            return cls.objects.get(id=book_id, is_deleted=False)
+        
+        except cls.DoesNotExist:
+            None
+
+    @classmethod
+    def get_deactive_by_id(cls, book_id):
+        try:
+            return cls.objects.get(id=book_id, is_deleted=True)
+        
+        except cls.DoesNotExist:
+            None
+
+    @classmethod
     def add(cls, account_book):
         account_book.save()
