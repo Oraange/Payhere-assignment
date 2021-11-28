@@ -1,8 +1,9 @@
 from django.urls import path
 
-from .views import CreateAccountBookView
+from .views import AccountBookView, AccountBookDetailView
 
 
 urlpatterns = [
-    path('', CreateAccountBookView.as_view()),
+    path('', AccountBookView.as_view()),
+    path('/<int:book_id>', AccountBookDetailView.as_view()),
 ]
