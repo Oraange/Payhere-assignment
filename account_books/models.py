@@ -18,3 +18,16 @@ class AccountBook(TimeStamp):
 
     class Meta:
         db_table = 'account_books'
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+
+        if self.id == other.id:
+            return True
+        
+        return False
+
+    @classmethod
+    def add(cls, account_book):
+        account_book.save()
