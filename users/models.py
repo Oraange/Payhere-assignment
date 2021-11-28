@@ -24,6 +24,14 @@ class User(TimeStamp):
         return False
 
     @classmethod
+    def get_by_user_id(cls, user_id):
+        try:
+            return cls.objects.get(id=user_id)
+
+        except cls.DoesNotExist:
+            return None
+
+    @classmethod
     def get_by_user_email(cls, email):
         try:
             return cls.objects.get(email=email)
