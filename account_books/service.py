@@ -1,5 +1,12 @@
-from .dto import CreateAccoutBookInputDTO, UpdateAccountBookInputDTO
+from django.db.models.query import QuerySet
+
 from .models import AccountBook
+from .dto import (
+    CreateAccoutBookInputDTO,
+    ReadAccountBookListOutputDTO, 
+    ParamsInputDTO,
+    UpdateAccountBookInputDTO
+)
 from .exceptions import (
     AccountBookNotFound, 
     AccountBookValueTypeError,
@@ -58,3 +65,33 @@ class UpdateAccountBookService(CheckTypeValidation, CheckAuthorizedUser):
         account_book.memo = book_info.memo
 
         account_book.save()
+
+
+class AccountBookDetailService:
+    def get_account_book(self, book_id):
+        if not isinstance(book_id, int):
+            raise AccountBookValueTypeError
+
+        account_book = AccountBook.get_active_by_id(book_id)
+        if not account_book:
+            raise AccountBookNotFound
+
+        return account_book
+
+
+class AccountBookListService:
+    def get_account_book_list(self, user, params: ParamsInputDTO):
+        book_queryset = AccountBook.get_queryset_by_user(user)
+        if not book_queryset.exists():
+            raise AccountBookNotFound
+
+        total_income = AccountBook.get_total_amount(book_queryset, AccountBook.Type.INCOME.value)
+        total_outlay = AccountBook.get_total_amount(book_queryset, AccountBook.Type.OUTLAY.value)
+        book_list = [*book_queryset][params.offset:params.offset+params.limit]
+
+        return ReadAccountBookListOutputDTO(
+            account_books=[book.get_details() for book in book_list],
+            total_income=total_income,
+            total_outlay=total_outlay,
+            total_count=book_queryset.count()
+        )
