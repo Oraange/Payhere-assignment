@@ -14,6 +14,7 @@ class AccountBook(TimeStamp):
     category = models.CharField(max_length=128)
     memo = models.TextField()
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    is_deleted = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'account_books'
