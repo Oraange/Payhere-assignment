@@ -1,7 +1,12 @@
+from datetime import datetime
+
 from django.db import models
+from django.db.models.query import QuerySet
+from django.db.models import Sum
 
 from core.models import TimeStamp
-
+from users.models import User
+from .dto import ReadAccountBookOutputDTO
 
 class AccountBook(TimeStamp):
     
@@ -28,15 +33,29 @@ class AccountBook(TimeStamp):
         
         return False
 
-    @classmethod
-    def get_list_by_user_id(cls, user):
-        if not cls.objects.filter(user=user).exists():
-            return None
+    def exists(self, *args, **kwargs):
+        super().exists(*args, **kwargs)
 
-        return cls.objects.filter(user=user)
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+    def get_details(self):
+        INCOME = "income"
+        OUTLAY = "outlay"
+        return ReadAccountBookOutputDTO(
+            updated_at=self.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            type=INCOME if self.type==AccountBook.Type.INCOME.value else OUTLAY,
+            amount=self.amount,
+            category=self.category,
+            memo=self.memo
+        )
 
     @classmethod
-    def get_active_by_id(cls, book_id):
+    def get_queryset_by_user(cls, user: User):
+        return cls.objects.filter(user=user, is_deleted=False).order_by('-updated_at')
+
+    @classmethod
+    def get_active_by_id(cls, book_id: int):
         try:
             return cls.objects.get(id=book_id, is_deleted=False)
         
@@ -44,12 +63,16 @@ class AccountBook(TimeStamp):
             None
 
     @classmethod
-    def get_deactive_by_id(cls, book_id):
+    def get_deactive_by_id(cls, book_id: int):
         try:
             return cls.objects.get(id=book_id, is_deleted=True)
         
         except cls.DoesNotExist:
             None
+
+    @classmethod
+    def get_total_amount(cls, books: QuerySet, type: int):
+        return books.filter(type=type).aggregate(Sum('amount'))
 
     @classmethod
     def add(cls, account_book):
