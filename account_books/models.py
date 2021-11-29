@@ -6,7 +6,7 @@ from django.db.models import Sum
 
 from core.models import TimeStamp
 from users.models import User
-from .dto import ReadAccountBookOutputDTO
+from .dto import BookOutputDTO
 
 
 class AccountBook(TimeStamp):
@@ -34,16 +34,13 @@ class AccountBook(TimeStamp):
         
         return False
 
-    def exists(self, *args, **kwargs):
-        super().exists(*args, **kwargs)
-
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
     def get_details(self):
         INCOME = "income"
         OUTLAY = "outlay"
-        return ReadAccountBookOutputDTO(
+        return BookOutputDTO(
             id=self.id,
             updated_at=self.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
             type=INCOME if self.type==AccountBook.Type.INCOME.value else OUTLAY,

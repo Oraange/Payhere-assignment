@@ -1,82 +1,67 @@
 from .models import AccountBook, User
 from .dto import (
-    CreateAccoutBookInputDTO,
-    DeleteBookIdDTO,
-    ReadAccountBookListOutputDTO, 
-    ParamsInputDTO,
-    RestoreBookIdDTO,
+    BookCreateDTO,
+    BookUpdateDTO,
+    BookIdDTO,
+    BookListOutputDTO, 
+    ParamsDTO,
     TreshListOutputDTO,
-    UpdateAccountBookInputDTO
 )
-from .exceptions import (
-    AccountBookNotFound, 
-    AccountBookValueTypeError,
-    Forbidden,
-    InvalidTypeOfType
-)
+from .exceptions import AccountBookNotFound, Forbidden
 
 
-class CheckTypeValidation:
-    def check_value_type(self, book_info: CreateAccoutBookInputDTO):
-        if not (isinstance(book_info.amount, int) and\
-                isinstance(book_info.category, str) and\
-                isinstance(book_info.memo, str)):
-            raise AccountBookValueTypeError
-
-    def check_income_or_outlay(self, type):
-        if type!=AccountBook.Type.INCOME.value and\
-            type!=AccountBook.Type.OUTLAY.value:
-            raise InvalidTypeOfType
-
-
-class CheckAuthorizedUser:
-    def is_authorized(self, account_book: AccountBook, user: User):
-        if str(account_book.user_id)!=str(user.id):
+class PermissionService:
+    def is_authorized(self, book: AccountBook, user: User):
+        if str(book.user_id)!=str(user.id):
             raise Forbidden
 
 
-class CreateAccountBookService(CheckTypeValidation):
-    def add_account_book(self, book_info: CreateAccoutBookInputDTO, user):
+class WriteBookService(PermissionService):
+    def check_value(self, input_info):
+        if not (isinstance(input_info.amount, int) and\
+                isinstance(input_info.category, str) and\
+                isinstance(input_info.memo, str)) or\
+            (input_info.type!=AccountBook.Type.INCOME.value and\
+            input_info.type!=AccountBook.Type.OUTLAY.value) or\
+            input_info.amount<0:
+            raise ValueError
+
+    def add_book(self, input_info: BookCreateDTO, user):
         new_book = AccountBook(
-            type=book_info.type,
-            amount=book_info.amount,
-            category=book_info.category,
-            memo=book_info.memo,
+            type=input_info.type,
+            amount=input_info.amount,
+            category=input_info.category,
+            memo=input_info.memo,
             user=user
         )
+        AccountBook.add(new_book)
 
-        return AccountBook.add(new_book)
-
-
-class UpdateAccountBookService(CheckTypeValidation, CheckAuthorizedUser):
-    def get_account_book(self, book_id):
-        account_book = AccountBook.get_by_id(book_id, is_deleted=False)
+    def get_book(self, book: BookIdDTO):
+        account_book = AccountBook.get_by_id(book.id, is_deleted=False)
         if not account_book:
             raise AccountBookNotFound
 
         return account_book
 
-    def update_account_book(self, account_book, book_info: UpdateAccountBookInputDTO):
-        account_book.type = book_info.type
-        account_book.amount = book_info.amount
-        account_book.category = book_info.category
-        account_book.memo = book_info.memo
+    def update_book(self, account_book: AccountBook, input_info: BookUpdateDTO):
+        account_book.type = input_info.type
+        account_book.amount = input_info.amount
+        account_book.category = input_info.category
+        account_book.memo = input_info.memo
 
         account_book.save()
 
 
-class AccountBookDetailService(CheckAuthorizedUser):
-    def get_account_book(self, book_id: int, user: User):
-        account_book = AccountBook.get_by_id(book_id, is_deleted=False)
+class ReadBookService(PermissionService):
+    def get_book(self, book: BookIdDTO, user: User):
+        account_book = AccountBook.get_by_id(book.id, is_deleted=False)
         if not account_book:
             raise AccountBookNotFound
-
         super().is_authorized(account_book, user)
+
         return account_book.get_details()
 
-
-class AccountBookListService:
-    def get_account_book_list(self, user, params: ParamsInputDTO):
+    def get_book_list(self, user, params: ParamsDTO):
         books = AccountBook.get_queryset_by_user(user, is_deleted=False)
         if not books.exists():
             raise AccountBookNotFound
@@ -84,17 +69,17 @@ class AccountBookListService:
         total_income, total_outlay = AccountBook.get_total_amount(books)
         book_list = [*books][params.offset:params.offset+params.limit]
 
-        return ReadAccountBookListOutputDTO(
-            account_books=[book.get_details() for book in book_list],
+        return BookListOutputDTO(
+            books=[book.get_details() for book in book_list],
             total_income=total_income or 0,
             total_outlay=total_outlay or 0,
             total_count=books.count()
         )
 
 
-class DeleteAccountBookService(CheckAuthorizedUser):
-    def remove(self, delete_book_info: DeleteBookIdDTO, user: User):
-        account_book = AccountBook.get_by_id(delete_book_info.id, is_deleted=False)
+class DeleteBookService(PermissionService):
+    def remove(self, book: BookIdDTO, user: User):
+        account_book = AccountBook.get_by_id(book.id, is_deleted=False)
         if not account_book:
             raise AccountBookNotFound
 
@@ -103,9 +88,9 @@ class DeleteAccountBookService(CheckAuthorizedUser):
         account_book.save()
 
 
-class TrashBookService(CheckAuthorizedUser):
-    def restore(self, restore_book_info: RestoreBookIdDTO, user: User):
-        deleted_account_book = AccountBook.get_by_id(restore_book_info.id, is_deleted=True)
+class TrashBookService(PermissionService):
+    def restore(self, book: BookIdDTO, user: User):
+        deleted_account_book = AccountBook.get_by_id(book.id, is_deleted=True)
         if not deleted_account_book:
             raise AccountBookNotFound
 
@@ -113,7 +98,7 @@ class TrashBookService(CheckAuthorizedUser):
         deleted_account_book.is_deleted = False
         deleted_account_book.save()
 
-    def get_trash_book_list(self, user, params: ParamsInputDTO):
+    def get_trash_book_list(self, user, params: ParamsDTO):
         books = AccountBook.get_queryset_by_user(user, is_deleted=True)
         if not books.exists():
             raise AccountBookNotFound

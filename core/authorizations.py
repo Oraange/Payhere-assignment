@@ -7,7 +7,7 @@ from users.models import User
 from my_settings import SECRET_KEY, ALGORITHM
 
 
-def authorize_for_user(func):
+def authorize(func):
     def wrapper(self, request, *arg, **kwargs):
         bearer_token = request.headers.get("Authorization", None)
 
@@ -20,7 +20,7 @@ def authorize_for_user(func):
         try:
             access_token = bearer_token.split()[1]
             payload = jwt.decode(access_token, SECRET_KEY, ALGORITHM)
-            user = User.get_by_user_id(payload["id"])
+            user = User.get_by_id(payload["id"])
 
         except jwt.DecodeError:
             return JsonResponse({"message": "INVALID_TOKEN"}, status=401)

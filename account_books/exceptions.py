@@ -1,9 +1,3 @@
-class AccountBookValueTypeError(Exception): ...
-
-
-class InvalidTypeOfType(Exception): ...
-
-
 class AccountBookNotFound(Exception): ...
 
 

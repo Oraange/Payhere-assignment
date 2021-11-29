@@ -14,7 +14,7 @@ class User(TimeStamp):
     class Meta:
         db_table = 'users'
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, self.__class__):
             return False
         
@@ -23,8 +23,11 @@ class User(TimeStamp):
 
         return False
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     @classmethod
-    def get_by_user_id(cls, user_id):
+    def get_by_id(cls, user_id):
         try:
             return cls.objects.get(id=user_id)
 
@@ -32,7 +35,7 @@ class User(TimeStamp):
             return None
 
     @classmethod
-    def get_by_user_email(cls, email):
+    def get_by_email(cls, email):
         try:
             return cls.objects.get(email=email)
         

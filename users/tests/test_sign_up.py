@@ -34,9 +34,9 @@ class SignUpViewTest(TestCase):
         self.assertEqual(response.json(), {"message": "KEY_ERROR"})
         self.assertEqual(response.status_code, 400)
 
-    @mock.patch.object(User, 'get_by_user_email')
-    def test_post_sign_up_duplicate_error(self, get_by_user_email):
-        get_by_user_email.return_value = User(
+    @mock.patch.object(User, 'get_by_email')
+    def test_post_sign_up_duplicate_error(self, get_user):
+        get_user.return_value = User(
             email="newUser@gmail.com",
             password="testtest123!",
             nick_name="myUser"

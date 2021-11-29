@@ -14,7 +14,7 @@ from .service import SignUpService, SignInService, TokenGenerator
 class SignUpView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.service = SignUpService()
+        self.signup_service = SignUpService()
 
     def post(self, request):
         data = json.loads(request.body)
@@ -23,7 +23,7 @@ class SignUpView(View):
             sign_up_info = SignUpInputDTO(**data)
             validate_email(sign_up_info.email)
             validate_password(sign_up_info.password)
-            self.service.add_user(sign_up_info)
+            self.signup_service.add_user(sign_up_info)
 
         except DuplicateUser:
             return JsonResponse({"message": "USER_ALREADY_EXIST"}, status=409)
@@ -44,16 +44,16 @@ class SignUpView(View):
 class SignInView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.sign_in_service = SignInService()
+        self.signin_service = SignInService()
         self.gen_token = TokenGenerator()
 
     def post(self, request):
         data = json.loads(request.body)
 
         try:
-            sign_in_info = SignInInputDTO(**data)
-            user = self.sign_in_service.get_user(sign_in_info.email)
-            self.sign_in_service.check_password(sign_in_info.password, user.password)
+            signin_info = SignInInputDTO(**data)
+            user = self.signin_service.get_user(signin_info.email)
+            self.signin_service.check_password(signin_info.password, user.password)
 
         except UserNotFound:
             return JsonResponse({"message": "INVALID_USER"}, status=404)

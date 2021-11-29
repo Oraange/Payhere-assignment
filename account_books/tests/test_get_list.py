@@ -1,5 +1,5 @@
 import jwt
-from unittest import mock
+from unittest.mock import patch
 
 from django.test import TestCase, Client
 
@@ -9,8 +9,8 @@ from my_settings import SECRET_KEY, ALGORITHM
 
 
 class UpdateAccountBookViewTest(TestCase):
-    @mock.patch.object(AccountBook, 'get_queryset_by_user')
-    @mock.patch.object(User, 'get_by_user_id')
+    @patch.object(AccountBook, 'get_queryset_by_user')
+    @patch.object(User, 'get_by_id')
     def setUp(self, get_user, get_qs):
         self.client = Client()
 
@@ -61,7 +61,7 @@ class UpdateAccountBookViewTest(TestCase):
         self.qs = get_qs.return_value.order_by('-updated_at')
 
     def tearDown(self):
-        mock.patch.stopall()
+        patch.stopall()
 
     def test_get_account_book_list_success(self):
         header = {'HTTP_Authorization': self.access_token}
@@ -70,7 +70,7 @@ class UpdateAccountBookViewTest(TestCase):
         self.assertEqual(response.json(),\
             {
                 "total_count": 3,
-                "total_income": None,
+                "total_income": 0,
                 "total_outlay": 5000,
                 "results": [
                     {

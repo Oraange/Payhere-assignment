@@ -1,9 +1,6 @@
 class UserNotFound(Exception): ...
 
 
-class UserNotFound(Exception): ...
-
-
 class DuplicateUser(Exception): ...
 
 

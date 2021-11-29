@@ -8,9 +8,9 @@ from users.models import User
 from my_settings import SECRET_KEY, ALGORITHM
 
 
-class UpdateAccountBookViewTest(TestCase):
-    @mock.patch.object(AccountBook, 'get_active_by_id')
-    @mock.patch.object(User, 'get_by_user_id')
+class DeleteAccountBookViewTest(TestCase):
+    @mock.patch.object(AccountBook, 'get_by_id')
+    @mock.patch.object(User, 'get_by_id')
     def setUp(self, get_user, get_book):
         self.client = Client()
 
