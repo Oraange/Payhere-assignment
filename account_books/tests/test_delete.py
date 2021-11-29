@@ -54,28 +54,19 @@ class UpdateAccountBookViewTest(TestCase):
     def tearDown(self):
         mock.patch.stopall()
 
-    def test_get_account_book_success(self):
+    def test_delete_account_book_success(self):
         header = {'HTTP_Authorization': self.access_token_1}
-        response = self.client.get('/account-books/1', content_type="application/json", **header)
-        self.maxDiff = None
-        self.assertEqual(response.json(),\
-            {
-                "updated_at": self.book_1.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "type": "income" if self.book_1.type==1 else "outlay",
-                "amount": self.book_1.amount,
-                "category": self.book_1.category,
-                "memo": self.book_1.memo
-            })
-        self.assertEqual(response.status_code, 200)
+        response = self.client.delete('/account-books/1', content_type="application/json", **header)
+        self.assertEqual(response.status_code, 204)
 
-    def test_get_account_book_not_found(self):
+    def test_delete_account_book_not_found(self):
         header = {'HTTP_Authorization': self.access_token_1}
-        response = self.client.get('/account-books/10', content_type="application/json", **header)
-        self.assertEqual(response.json(),{"message": "ACCOUNT_BOOKS_DO_NOT_EXIST"})
+        response = self.client.delete('/account-books/10', content_type="application/json", **header)
+        self.assertEqual(response.json(),{"message": "ACCOUNT_BOOK_DOES_NOT_EXIST"})
         self.assertEqual(response.status_code, 404)
 
     def test_get_account_book_forbidden(self):
         header = {'HTTP_Authorization': self.access_token_2}
-        response = self.client.get('/account-books/1', content_type="application/json", **header)
+        response = self.client.delete('/account-books/1', content_type="application/json", **header)
         self.assertEqual(response.json(),{"message": "FORBIDDEN"})
         self.assertEqual(response.status_code, 403)
