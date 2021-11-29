@@ -1,5 +1,5 @@
 import jwt
-from unittest import mock
+from unittest.mock import patch
 
 from django.test import TestCase, Client
 
@@ -9,8 +9,8 @@ from my_settings import SECRET_KEY, ALGORITHM
 
 
 class DeleteAccountBookViewTest(TestCase):
-    @mock.patch.object(AccountBook, 'get_by_id')
-    @mock.patch.object(User, 'get_by_id')
+    @patch.object(AccountBook, 'get_by_id')
+    @patch.object(User, 'get_by_id')
     def setUp(self, get_user, get_book):
         self.client = Client()
 
@@ -52,7 +52,7 @@ class DeleteAccountBookViewTest(TestCase):
         get_book.return_value = self.book_1
 
     def tearDown(self):
-        mock.patch.stopall()
+        patch.stopall()
 
     def test_delete_account_book_success(self):
         header = {'HTTP_Authorization': self.access_token_1}

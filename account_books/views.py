@@ -192,7 +192,7 @@ class TrashedBookView(View):
     def patch(self, request, book_id):
         user = request.user
         try:
-            book_id = BookIdDTO(book_=book_id)
+            book_id = BookIdDTO(id=book_id)
             self.trash_service.restore(book_id, user)
         
         except AccountBookNotFound:

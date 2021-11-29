@@ -8,7 +8,7 @@ from users.models import User
 from my_settings import SECRET_KEY, ALGORITHM
 
 
-class AccountBookListViewTest(TestCase):
+class TrashedBookListViewTest(TestCase):
     @patch.object(AccountBook, 'get_queryset_by_user')
     @patch.object(User, 'get_by_id')
     def setUp(self, get_user, get_qs):
@@ -36,7 +36,8 @@ class AccountBookListViewTest(TestCase):
             amount=1000,
             category="편의점",
             memo="맛있는 삼각김밥",
-            user=user_1
+            user=user_1,
+            is_deleted=True
         )
         book_1.save()
         book_2 = AccountBook(
@@ -45,7 +46,8 @@ class AccountBookListViewTest(TestCase):
             amount=3500,
             category="중국집",
             memo="손짜장",
-            user=user_1
+            user=user_1,
+            is_deleted=True
         )
         book_2.save()
         book_3 = AccountBook(
@@ -54,7 +56,8 @@ class AccountBookListViewTest(TestCase):
             amount=500,
             category="편의점",
             memo="사탕",
-            user=user_1
+            user=user_1,
+            is_deleted=True
         )
         book_3.save()
         get_qs.return_value = AccountBook.objects.filter(id__in=[1,2,3])
@@ -63,15 +66,13 @@ class AccountBookListViewTest(TestCase):
     def tearDown(self):
         patch.stopall()
 
-    def test_get_account_book_list_success(self):
+    def test_get_trash_book_list_success(self):
         header = {'HTTP_Authorization': self.access_token}
-        response = self.client.get('/account-books', content_type="application/json", **header)
+        response = self.client.get('/account-books/trash', content_type="application/json", **header)
         self.maxDiff = None
         self.assertEqual(response.json(),\
             {
                 "total_count": 3,
-                "total_income": 0,
-                "total_outlay": 5000,
                 "results": [
                     {
                         "id": book.id,
@@ -84,14 +85,14 @@ class AccountBookListViewTest(TestCase):
             })
         self.assertEqual(response.status_code, 200)
 
-    def test_get_account_book_list_not_found(self):
+    def test_get_trash_book_list_not_found(self):
         header = {'HTTP_Authorization': self.access_token_2}
-        response = self.client.get('/account-books', content_type="application/json", **header)
+        response = self.client.get('/account-books/trash', content_type="application/json", **header)
         self.assertEqual(response.json(),{"message": "ACCOUNT_BOOKS_DO_NOT_EXIST"})
         self.assertEqual(response.status_code, 404)
 
-    def test_get_account_book_invalid_params(self):
+    def test_get_trash_book_invalid_params(self):
         header = {'HTTP_Authorization': self.access_token}
-        response = self.client.get('/account-books?offset=0&limit=a', content_type="application/json", **header)
+        response = self.client.get('/account-books/trash?offset=0&limit=a', content_type="application/json", **header)
         self.assertEqual(response.json(),{"message": "PARAMETER_ERROR"})
         self.assertEqual(response.status_code, 400)
