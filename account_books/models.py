@@ -1,4 +1,4 @@
-from datetime import datetime
+from typing import List
 
 from django.db import models
 from django.db.models.query import QuerySet
@@ -61,7 +61,7 @@ class AccountBook(TimeStamp):
         
         except cls.DoesNotExist:
             None
-
+        
     @classmethod
     def get_deactive_by_id(cls, book_id: int):
         try:

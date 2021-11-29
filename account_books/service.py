@@ -1,6 +1,7 @@
 from .models import AccountBook, User
 from .dto import (
     CreateAccoutBookInputDTO,
+    DeleteBookIdDTO,
     ReadAccountBookListOutputDTO, 
     ParamsInputDTO,
     UpdateAccountBookInputDTO
@@ -88,3 +89,15 @@ class AccountBookListService:
             total_outlay=total_outlay["amount__sum"] or 0,
             total_count=book_queryset.count()
         )
+
+
+class DeleteAccountBookService(CheckAuthorizedUser):
+    def remove(self, delete_book_info: DeleteBookIdDTO, user: User):
+        account_book = AccountBook.get_active_by_id(delete_book_info.id)
+        if not account_book:
+            raise AccountBookNotFound
+
+        super().is_authorized(account_book, user)
+        account_book.is_deleted = True
+        account_book.save()
+        
