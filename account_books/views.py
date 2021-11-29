@@ -72,8 +72,8 @@ class AccountBookView(View):
             return JsonResponse(
                 {
                     "total_count": account_books.total_count,
-                    "total_income": account_books.total_income["amount__sum"],
-                    "total_outlay": account_books.total_outlay["amount__sum"],
+                    "total_income": account_books.total_income,
+                    "total_outlay": account_books.total_outlay,
                     "results": [
                         {
                             "updated_at": book.updated_at,
@@ -89,6 +89,7 @@ class AccountBookDetailView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.update_service = UpdateAccountBookService()
+        self.get_service = AccountBookDetailService()
 
     @authorize_for_user
     def put(self, request, book_id):
@@ -113,9 +114,28 @@ class AccountBookDetailView(View):
         except InvalidTypeOfType:
             return JsonResponse({"message": "TYPE_MUST_BE_1_or_2"}, status=400)
 
-        except AccountBookValueTypeError:
-            return JsonResponse({"message": "INVALID_VALUE"}, status=400)
-
         else:
             self.update_service.update_account_book(account_book, account_book_info)
             return HttpResponse(status=204)
+
+    @authorize_for_user
+    def get(self, request, book_id):
+        user = request.user
+        try:
+            account_book = self.get_service.get_account_book(book_id, user)
+        
+        except AccountBookNotFound:
+            return JsonResponse({"message": "ACCOUNT_BOOKS_DO_NOT_EXIST"}, status=404)
+
+        except Forbidden:
+            return JsonResponse({"message": "FORBIDDEN"}, status=403)
+
+        else:
+            return JsonResponse(
+                {
+                    "updated_at": account_book.updated_at,
+                    "type": account_book.type,
+                    "amount": account_book.amount,
+                    "category": account_book.category,
+                    "memo": account_book.memo
+                }, status=200)
