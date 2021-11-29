@@ -4,6 +4,8 @@ from .dto import (
     DeleteBookIdDTO,
     ReadAccountBookListOutputDTO, 
     ParamsInputDTO,
+    RestoreBookIdDTO,
+    TreshListOutputDTO,
     UpdateAccountBookInputDTO
 )
 from .exceptions import (
@@ -48,7 +50,7 @@ class CreateAccountBookService(CheckTypeValidation):
 
 class UpdateAccountBookService(CheckTypeValidation, CheckAuthorizedUser):
     def get_account_book(self, book_id):
-        account_book = AccountBook.get_active_by_id(book_id)
+        account_book = AccountBook.get_by_id(book_id, is_deleted=False)
         if not account_book:
             raise AccountBookNotFound
 
@@ -65,7 +67,7 @@ class UpdateAccountBookService(CheckTypeValidation, CheckAuthorizedUser):
 
 class AccountBookDetailService(CheckAuthorizedUser):
     def get_account_book(self, book_id: int, user: User):
-        account_book = AccountBook.get_active_by_id(book_id)
+        account_book = AccountBook.get_by_id(book_id, is_deleted=False)
         if not account_book:
             raise AccountBookNotFound
 
@@ -75,29 +77,50 @@ class AccountBookDetailService(CheckAuthorizedUser):
 
 class AccountBookListService:
     def get_account_book_list(self, user, params: ParamsInputDTO):
-        book_queryset = AccountBook.get_queryset_by_user(user)
-        if not book_queryset.exists():
+        books = AccountBook.get_queryset_by_user(user, is_deleted=False)
+        if not books.exists():
             raise AccountBookNotFound
 
-        total_income = AccountBook.get_total_amount(book_queryset, AccountBook.Type.INCOME.value)
-        total_outlay = AccountBook.get_total_amount(book_queryset, AccountBook.Type.OUTLAY.value)
-        book_list = [*book_queryset][params.offset:params.offset+params.limit]
+        total_income, total_outlay = AccountBook.get_total_amount(books)
+        book_list = [*books][params.offset:params.offset+params.limit]
 
         return ReadAccountBookListOutputDTO(
             account_books=[book.get_details() for book in book_list],
-            total_income=total_income["amount__sum"] or 0,
-            total_outlay=total_outlay["amount__sum"] or 0,
-            total_count=book_queryset.count()
+            total_income=total_income or 0,
+            total_outlay=total_outlay or 0,
+            total_count=books.count()
         )
 
 
 class DeleteAccountBookService(CheckAuthorizedUser):
     def remove(self, delete_book_info: DeleteBookIdDTO, user: User):
-        account_book = AccountBook.get_active_by_id(delete_book_info.id)
+        account_book = AccountBook.get_by_id(delete_book_info.id, is_deleted=False)
         if not account_book:
             raise AccountBookNotFound
 
         super().is_authorized(account_book, user)
         account_book.is_deleted = True
         account_book.save()
-        
+
+
+class TrashBookService(CheckAuthorizedUser):
+    def restore(self, restore_book_info: RestoreBookIdDTO, user: User):
+        deleted_account_book = AccountBook.get_by_id(restore_book_info.id, is_deleted=True)
+        if not deleted_account_book:
+            raise AccountBookNotFound
+
+        super().is_authorized(deleted_account_book, user)
+        deleted_account_book.is_deleted = False
+        deleted_account_book.save()
+
+    def get_trash_book_list(self, user, params: ParamsInputDTO):
+        books = AccountBook.get_queryset_by_user(user, is_deleted=True)
+        if not books.exists():
+            raise AccountBookNotFound
+
+        book_list = [*books][params.offset:params.offset+params.limit]
+
+        return TreshListOutputDTO(
+            account_books=[book.get_details() for book in book_list],
+            total_count=books.count()
+        )

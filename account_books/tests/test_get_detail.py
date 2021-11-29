@@ -60,6 +60,7 @@ class UpdateAccountBookViewTest(TestCase):
         self.maxDiff = None
         self.assertEqual(response.json(),\
             {
+                "id": self.book_1.id,
                 "updated_at": self.book_1.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "type": "income" if self.book_1.type==1 else "outlay",
                 "amount": self.book_1.amount,

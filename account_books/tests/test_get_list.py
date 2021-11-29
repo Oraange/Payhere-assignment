@@ -74,6 +74,7 @@ class UpdateAccountBookViewTest(TestCase):
                 "total_outlay": 5000,
                 "results": [
                     {
+                        "id": book.id,
                         "updated_at": book.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
                         "type": "income" if book.type==1 else "outlay",
                         "amount": book.amount,
