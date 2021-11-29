@@ -1,11 +1,8 @@
-import bcrypt
-import json
 import jwt
 from unittest import mock
 
 from django.test import TestCase, Client
 
-from users.service import SignInService
 from account_books.models import AccountBook
 from users.models import User
 from my_settings import SECRET_KEY, ALGORITHM
