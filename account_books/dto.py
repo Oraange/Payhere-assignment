@@ -4,7 +4,15 @@ from typing import List
 
 
 @dataclass
-class CreateAccoutBookInputDTO:
+class BookCreateDTO:
+    type: int
+    amount: int
+    category: str
+    memo: str
+
+
+@dataclass
+class BookUpdateDTO:
     type: int
     amount: int
     category: str
@@ -12,15 +20,7 @@ class CreateAccoutBookInputDTO:
     
 
 @dataclass
-class UpdateAccountBookInputDTO:
-    type: int
-    amount: int
-    category: str
-    memo: str
-
-
-@dataclass
-class ReadAccountBookOutputDTO:
+class BookOutputDTO:
     id: int
     updated_at: datetime
     type: str
@@ -30,29 +30,25 @@ class ReadAccountBookOutputDTO:
 
 
 @dataclass
-class ParamsInputDTO:
+class BookListOutputDTO:
+    books: List[BookOutputDTO]
+    total_income: int
+    total_outlay: int
+    total_count: int
+
+
+@dataclass
+class ParamsDTO:
     offset: int
     limit: int
 
 
 @dataclass
-class DeleteBookIdDTO:
-    id: int
-
-
-@dataclass
-class RestoreBookIdDTO:
+class BookIdDTO:
     id: int
 
 
 @dataclass
 class TreshListOutputDTO:
-    account_books: List[ReadAccountBookOutputDTO]
-    total_count: int
-
-@dataclass
-class ReadAccountBookListOutputDTO:
-    account_books: List[ReadAccountBookOutputDTO]
-    total_income: int
-    total_outlay: int
+    books: List[BookOutputDTO]
     total_count: int

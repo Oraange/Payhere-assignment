@@ -1,20 +1,19 @@
 import bcrypt
 import json
 import jwt
-from unittest import mock
+from unittest.mock import patch
 
 from django.test import TestCase, Client
 
-from users.service import SignInService
 from account_books.models import AccountBook
 from users.models import User
 from my_settings import SECRET_KEY, ALGORITHM
 
 
 class UpdateAccountBookViewTest(TestCase):
-    
-    @mock.patch.object(SignInService, 'get_user')
-    def setUp(self, get_user):
+    @patch.object(User, 'get_by_id')
+    @patch.object(AccountBook, 'get_by_id')
+    def setUp(self, get_book, get_user):
         self.client = Client()
         get_user.return_value = User(
             email="test_update@gmail.com",
@@ -28,17 +27,18 @@ class UpdateAccountBookViewTest(TestCase):
         
         self.access_token = "Bearer " + jwt.encode({"id": user_id}, SECRET_KEY, ALGORITHM)
 
-        self.book = AccountBook(
+        get_book.return_value = AccountBook(
             type=AccountBook.Type.INCOME.value,
             amount=1000,
             category="역전우동",
             memo="뜨끈한 우동 한모금",
             user=get_user.return_value
         )
-        self.book.save()
+        get_book.return_value.save()
+        self.book = get_book.return_value
 
     def tearDown(self):
-        mock.patch.stopall()
+        patch.stopall()
 
     def test_put_account_book_success(self):
         data = {
@@ -63,7 +63,7 @@ class UpdateAccountBookViewTest(TestCase):
         self.assertEqual(response.json(), {"message": "ACCOUNT_BOOK_DOES_NOT_EXIST"})
         self.assertEqual(response.status_code, 404)
 
-    @mock.patch.object(SignInService, 'get_user')
+    @patch.object(User, 'get_by_id')
     def test_put_account_book_forbidden(self, get_user):
         get_user.return_value = User(
             email="test2@gmail.com",
@@ -73,9 +73,8 @@ class UpdateAccountBookViewTest(TestCase):
             nick_name="testUser2"
         )
         user_id = str(get_user.return_value.id)
-        get_user.return_value.save()
-        
         access_token = "Bearer " + jwt.encode({"id": user_id}, SECRET_KEY, ALGORITHM)
+        
         data = {
             "type" : 2,
             "amount" : 5000,
@@ -96,7 +95,7 @@ class UpdateAccountBookViewTest(TestCase):
         }
         header = {'HTTP_Authorization': self.access_token}
         response = self.client.put(f'/account-books/{self.book.id}', json.dumps(data), content_type="application/json", **header)
-        self.assertEqual(response.json(), {"message": "KEY_ERROR"})
+        self.assertEqual(response.json(), {"message": "INVALID_KEY"})
         self.assertEqual(response.status_code, 400)
 
     def test_put_account_book_value_error(self):
@@ -120,5 +119,5 @@ class UpdateAccountBookViewTest(TestCase):
         }
         header = {'HTTP_Authorization': self.access_token}
         response = self.client.put(f'/account-books/{self.book.id}', json.dumps(data), content_type="application/json", **header)
-        self.assertEqual(response.json(), {"message": "TYPE_MUST_BE_1_or_2"})
+        self.assertEqual(response.json(), {"message": "INVALID_VALUE"})
         self.assertEqual(response.status_code, 400)

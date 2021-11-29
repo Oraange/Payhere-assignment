@@ -1,34 +1,29 @@
-import bcrypt
 import json
 import jwt
-from unittest import mock
+from unittest.mock import patch
 
 from django.test import TestCase, Client
 
-from users.service import SignInService
 from users.models import User
 from my_settings import SECRET_KEY, ALGORITHM
 
 class CreateAccountBookViewTest(TestCase):
-
-    @mock.patch.object(SignInService, 'get_user')
+    @patch.object(User, 'get_by_id')
     def setUp(self, get_user):
         self.client = Client()
-        get_user.return_value = User(
+    
+        get_user.return_value = user_1 = User(
             email="test@gmail.com",
-            password=bcrypt.hashpw(
-                "test123!@".encode("utf-8"), bcrypt.gensalt()
-            ).decode("utf-8"),
-            nick_name="testUser"
+            password="test123!@",
+            nick_name="test_user_1"
         )
-        user_id = str(get_user.return_value.id)
         get_user.return_value.save()
 
-        self.access_token = "Bearer " + jwt.encode({"id": user_id}, SECRET_KEY, ALGORITHM)
+        self.access_token = "Bearer " + jwt.encode({"id": str(user_1.id)}, SECRET_KEY, ALGORITHM)
 
 
     def tearDown(self):
-        mock.patch.stopall()
+        User.objects.all().delete()
 
     def test_post_account_book_success(self):
         data = {
@@ -51,7 +46,7 @@ class CreateAccountBookViewTest(TestCase):
         }
         header = {'HTTP_Authorization': self.access_token}
         response = self.client.post('/account-books', json.dumps(data), content_type="application/json", **header)
-        self.assertEqual(response.json(), {"message": "KEY_ERROR"})
+        self.assertEqual(response.json(), {"message": "INVALID_KEY"})
         self.assertEqual(response.status_code, 400)
 
     def test_post_account_book_type_not_1_or2(self):
@@ -63,7 +58,7 @@ class CreateAccountBookViewTest(TestCase):
         }
         header = {'HTTP_Authorization': self.access_token}
         response = self.client.post('/account-books', json.dumps(data), content_type="application/json", **header)
-        self.assertEqual(response.json(), {"message": "TYPE_MUST_BE_1_or_2"})
+        self.assertEqual(response.json(), {"message": "INVALID_VALUE"})
         self.assertEqual(response.status_code, 400)
 
     def test_post_account_book_value_error(self):

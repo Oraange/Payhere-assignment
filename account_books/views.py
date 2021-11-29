@@ -3,68 +3,54 @@ import json
 from django.http import JsonResponse, HttpResponse
 from django.views import View
 
-from core.authorizations import authorize_for_user
+from core.authorizations import authorize
 from .dto import (
-    CreateAccoutBookInputDTO,
-    DeleteBookIdDTO,
-    ParamsInputDTO, 
-    UpdateAccountBookInputDTO, 
-    ReadAccountBookListOutputDTO, 
-    ReadAccountBookOutputDTO,
-    RestoreBookIdDTO
+    BookCreateDTO,
+    BookUpdateDTO,
+    BookIdDTO,
+    ParamsDTO
 )
 from .service import (
-    AccountBookDetailService,
-    AccountBookListService,
-    CreateAccountBookService,
-    DeleteAccountBookService,
-    TrashBookService, 
-    UpdateAccountBookService
+    WriteBookService,
+    ReadBookService,
+    DeleteBookService,
+    TrashBookService
 )
-from .exceptions import (
-    AccountBookNotFound, 
-    AccountBookValueTypeError, 
-    Forbidden, 
-    InvalidTypeOfType
-)
+from .exceptions import AccountBookNotFound, Forbidden
 
 
 class AccountBookView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.create_service = CreateAccountBookService()
-        self.get_service = AccountBookListService()
+        self.create_service = WriteBookService()
+        self.get_service = ReadBookService()
 
-    @authorize_for_user
+    @authorize
     def post(self, request):
         data = json.loads(request.body)
         user = request.user
         try:
-            account_book_info = CreateAccoutBookInputDTO(**data)
-            self.create_service.check_income_or_outlay(account_book_info.type)
-            self.create_service.check_value_type(account_book_info)
+            input_info = BookCreateDTO(**data)
+            self.create_service.check_value(input_info)
 
         except TypeError:
-            return JsonResponse({"message": "KEY_ERROR"}, status=400)
+            return JsonResponse({"message": "INVALID_KEY"}, status=400)
 
-        except InvalidTypeOfType:
-            return JsonResponse({"message": "TYPE_MUST_BE_1_or_2"}, status=400)
-
-        except AccountBookValueTypeError:
+        except ValueError:
             return JsonResponse({"message": "INVALID_VALUE"}, status=400)
         
         else: 
-            self.create_service.add_account_book(account_book_info, user)
+            self.create_service.add_book(input_info, user)
             return JsonResponse({"message": "CREATED"}, status=201)
 
-    @authorize_for_user
+    @authorize
     def get(self, request):
         user = request.user
         OFFSET = request.GET.get("offset", 0)
         LIMIT = request.GET.get("limit", 5)
         try:
-            params = ParamsInputDTO(offset=int(OFFSET), limit=int(LIMIT))
-            account_books = self.get_service.get_account_book_list(user, params)
+            params = ParamsDTO(offset=int(OFFSET), limit=int(LIMIT))
+            output_info = self.get_service.get_book_list(user, params)
 
         except AccountBookNotFound:
             return JsonResponse({"message": "ACCOUNT_BOOKS_DO_NOT_EXIST"}, status=404)
@@ -75,9 +61,9 @@ class AccountBookView(View):
         else:
             return JsonResponse(
                 {
-                    "total_count": account_books.total_count,
-                    "total_income": account_books.total_income,
-                    "total_outlay": account_books.total_outlay,
+                    "total_count": output_info.total_count,
+                    "total_income": output_info.total_income,
+                    "total_outlay": output_info.total_outlay,
                     "results": [
                         {
                             "id": book.id,
@@ -86,7 +72,7 @@ class AccountBookView(View):
                             "amount": book.amount,
                             "category": book.category,
                             "memo": book.memo
-                        } for book in account_books.account_books
+                        } for book in output_info.books
                     ]
                 }, status=200)
     
@@ -94,20 +80,20 @@ class AccountBookView(View):
 class AccountBookDetailView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.update_service = UpdateAccountBookService()
-        self.get_service = AccountBookDetailService()
-        self.delete_service = DeleteAccountBookService()
+        self.update_service = WriteBookService()
+        self.get_service = ReadBookService()
+        self.delete_service = DeleteBookService()
 
-    @authorize_for_user
+    @authorize
     def put(self, request, book_id):
         data = json.loads(request.body)
         user = request.user
         try:
-            account_book_info = UpdateAccountBookInputDTO(**data)
-            account_book = self.update_service.get_account_book(book_id)
+            book_id = BookIdDTO(id=book_id)
+            input_info = BookUpdateDTO(**data)
+            self.update_service.check_value(input_info)
+            account_book = self.update_service.get_book(book_id)
             self.update_service.is_authorized(account_book, user)
-            self.update_service.check_income_or_outlay(account_book_info.type)
-            self.update_service.check_value_type(account_book_info)
 
         except AccountBookNotFound:
             return JsonResponse({"message": "ACCOUNT_BOOK_DOES_NOT_EXIST"}, status=404)
@@ -116,20 +102,21 @@ class AccountBookDetailView(View):
             return JsonResponse({"message": "FORBIDDEN"}, status=403)
         
         except TypeError:
-            return JsonResponse({"message": "KEY_ERROR"}, status=400)
+            return JsonResponse({"message": "INVALID_KEY"}, status=400)
 
-        except InvalidTypeOfType:
-            return JsonResponse({"message": "TYPE_MUST_BE_1_or_2"}, status=400)
-
+        except ValueError:
+            return JsonResponse({"message": "INVALID_VALUE"}, status=400)
+            
         else:
-            self.update_service.update_account_book(account_book, account_book_info)
+            self.update_service.update_book(account_book, input_info)
             return HttpResponse(status=204)
 
-    @authorize_for_user
+    @authorize
     def get(self, request, book_id):
         user = request.user
         try:
-            account_book = self.get_service.get_account_book(book_id, user)
+            book_id = BookIdDTO(id=book_id)
+            output_info = self.get_service.get_book(book_id, user)
         
         except AccountBookNotFound:
             return JsonResponse({"message": "ACCOUNT_BOOKS_DO_NOT_EXIST"}, status=404)
@@ -140,20 +127,20 @@ class AccountBookDetailView(View):
         else:
             return JsonResponse(
                 {
-                    "id": account_book.id,
-                    "updated_at": account_book.updated_at,
-                    "type": account_book.type,
-                    "amount": account_book.amount,
-                    "category": account_book.category,
-                    "memo": account_book.memo
+                    "id": output_info.id,
+                    "updated_at": output_info.updated_at,
+                    "type": output_info.type,
+                    "amount": output_info.amount,
+                    "category": output_info.category,
+                    "memo": output_info.memo
                 }, status=200)
 
-    @authorize_for_user
+    @authorize
     def delete(self, reqeust, book_id):
         user = reqeust.user
         try:
-            id = DeleteBookIdDTO(id=book_id)
-            self.delete_service.remove(id, user)
+            book_id = BookIdDTO(id=book_id)
+            self.delete_service.remove(book_id, user)
         
         except AccountBookNotFound:
             return JsonResponse({"message": "ACCOUNT_BOOK_DOES_NOT_EXIST"}, status=404)
@@ -170,14 +157,14 @@ class TrashedBookView(View):
         super().__init__(**kwargs)
         self.trash_service = TrashBookService()
 
-    @authorize_for_user
+    @authorize
     def get(self, request):
         user = request.user
         OFFSET = request.GET.get("offset", 0)
         LIMIT = request.GET.get("limit", 5)
         try:
-            params = ParamsInputDTO(offset=int(OFFSET), limit=int(LIMIT))
-            account_books = self.trash_service.get_trash_book_list(user, params)
+            params = ParamsDTO(offset=int(OFFSET), limit=int(LIMIT))
+            output_info = self.trash_service.get_trash_book_list(user, params)
 
         except AccountBookNotFound:
             return JsonResponse({"message": "ACCOUNT_BOOKS_DO_NOT_EXIST"}, status=404)
@@ -188,7 +175,7 @@ class TrashedBookView(View):
         else:
             return JsonResponse(
                 {
-                    "total_count": account_books.total_count,
+                    "total_count": output_info.total_count,
                     "results": [
                         {
                             "id": book.id,
@@ -197,16 +184,16 @@ class TrashedBookView(View):
                             "amount": book.amount,
                             "category": book.category,
                             "memo": book.memo
-                        } for book in account_books.account_books
+                        } for book in output_info.books
                     ]
                 }, status=200)
 
-    @authorize_for_user
+    @authorize
     def patch(self, request, book_id):
         user = request.user
         try:
-            id = RestoreBookIdDTO(id=book_id)
-            self.trash_service.restore(id, user)
+            book_id = BookIdDTO(book_=book_id)
+            self.trash_service.restore(book_id, user)
         
         except AccountBookNotFound:
             return JsonResponse({"message": "ACCOUNT_BOOK_DOES_NOT_EXIST"}, status=404)

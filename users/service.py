@@ -20,7 +20,7 @@ class SignUpService:
             password=self.encrypte_password(sign_up_info.password),
             nick_name=sign_up_info.nick_name
         )
-        if User.get_by_user_email(sign_up_info.email):
+        if User.get_by_email(sign_up_info.email):
             raise DuplicateUser
 
         return User.add(new_user)
@@ -28,7 +28,7 @@ class SignUpService:
 
 class SignInService:
     def get_user(self, email):
-        user = User.get_by_user_email(email)
+        user = User.get_by_email(email)
         if not user:
             raise UserNotFound
         
@@ -40,8 +40,5 @@ class SignInService:
 
 
 class TokenGenerator:
-    def __init__(self):
-        self.sign_in_service = SignInService()
-
     def generate_token(self, user_id):
         return {"access_token": "Bearer " + jwt.encode({"id": str(user_id)}, SECRET_KEY, ALGORITHM)}
