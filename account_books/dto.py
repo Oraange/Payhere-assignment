@@ -21,6 +21,7 @@ class UpdateAccountBookInputDTO:
 
 @dataclass
 class ReadAccountBookOutputDTO:
+    id: int
     updated_at: datetime
     type: str
     amount: int
@@ -38,6 +39,16 @@ class ParamsInputDTO:
 class DeleteBookIdDTO:
     id: int
 
+
+@dataclass
+class RestoreBookIdDTO:
+    id: int
+
+
+@dataclass
+class TreshListOutputDTO:
+    account_books: List[ReadAccountBookOutputDTO]
+    total_count: int
 
 @dataclass
 class ReadAccountBookListOutputDTO:

@@ -10,14 +10,16 @@ from .dto import (
     ParamsInputDTO, 
     UpdateAccountBookInputDTO, 
     ReadAccountBookListOutputDTO, 
-    ReadAccountBookOutputDTO
+    ReadAccountBookOutputDTO,
+    RestoreBookIdDTO
 )
 from .service import (
     AccountBookDetailService,
     AccountBookListService,
     CreateAccountBookService,
-    DeleteAccountBookService, 
-    UpdateAccountBookService 
+    DeleteAccountBookService,
+    TrashBookService, 
+    UpdateAccountBookService
 )
 from .exceptions import (
     AccountBookNotFound, 
@@ -78,6 +80,7 @@ class AccountBookView(View):
                     "total_outlay": account_books.total_outlay,
                     "results": [
                         {
+                            "id": book.id,
                             "updated_at": book.updated_at,
                             "type": book.type,
                             "amount": book.amount,
@@ -137,6 +140,7 @@ class AccountBookDetailView(View):
         else:
             return JsonResponse(
                 {
+                    "id": account_book.id,
                     "updated_at": account_book.updated_at,
                     "type": account_book.type,
                     "amount": account_book.amount,
@@ -159,3 +163,56 @@ class AccountBookDetailView(View):
 
         else:
             return HttpResponse(status=204)
+
+
+class TrashedBookView(View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.trash_service = TrashBookService()
+
+    @authorize_for_user
+    def get(self, request):
+        user = request.user
+        OFFSET = request.GET.get("offset", 0)
+        LIMIT = request.GET.get("limit", 5)
+        try:
+            params = ParamsInputDTO(offset=int(OFFSET), limit=int(LIMIT))
+            account_books = self.trash_service.get_trash_book_list(user, params)
+
+        except AccountBookNotFound:
+            return JsonResponse({"message": "ACCOUNT_BOOKS_DO_NOT_EXIST"}, status=404)
+
+        except ValueError:
+            return JsonResponse({"message": "PARAMETER_ERROR"}, status=400)
+
+        else:
+            return JsonResponse(
+                {
+                    "total_count": account_books.total_count,
+                    "results": [
+                        {
+                            "id": book.id,
+                            "updated_at": book.updated_at,
+                            "type": book.type,
+                            "amount": book.amount,
+                            "category": book.category,
+                            "memo": book.memo
+                        } for book in account_books.account_books
+                    ]
+                }, status=200)
+
+    @authorize_for_user
+    def patch(self, request, book_id):
+        user = request.user
+        try:
+            id = RestoreBookIdDTO(id=book_id)
+            self.trash_service.restore(id, user)
+        
+        except AccountBookNotFound:
+            return JsonResponse({"message": "ACCOUNT_BOOK_DOES_NOT_EXIST"}, status=404)
+
+        except Forbidden:
+            return JsonResponse({"message": "FORBIDDEN"}, status=403)
+
+        else:
+            return JsonResponse({"message": "PUBLISHED"}, status=200)

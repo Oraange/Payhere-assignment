@@ -8,6 +8,7 @@ from core.models import TimeStamp
 from users.models import User
 from .dto import ReadAccountBookOutputDTO
 
+
 class AccountBook(TimeStamp):
     
     class Type(models.IntegerChoices):
@@ -43,6 +44,7 @@ class AccountBook(TimeStamp):
         INCOME = "income"
         OUTLAY = "outlay"
         return ReadAccountBookOutputDTO(
+            id=self.id,
             updated_at=self.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
             type=INCOME if self.type==AccountBook.Type.INCOME.value else OUTLAY,
             amount=self.amount,
@@ -51,28 +53,21 @@ class AccountBook(TimeStamp):
         )
 
     @classmethod
-    def get_queryset_by_user(cls, user: User):
-        return cls.objects.filter(user=user, is_deleted=False).order_by('-updated_at')
+    def get_queryset_by_user(cls, user: User, **flag: bool):
+        return cls.objects.filter(user=user, **flag).order_by('-updated_at')
 
     @classmethod
-    def get_active_by_id(cls, book_id: int):
+    def get_by_id(cls, book_id: int, **flag: bool):
         try:
-            return cls.objects.get(id=book_id, is_deleted=False)
-        
-        except cls.DoesNotExist:
-            None
-        
-    @classmethod
-    def get_deactive_by_id(cls, book_id: int):
-        try:
-            return cls.objects.get(id=book_id, is_deleted=True)
+            return cls.objects.get(id=book_id, **flag)
         
         except cls.DoesNotExist:
             None
 
     @classmethod
-    def get_total_amount(cls, books: QuerySet, type: int):
-        return books.filter(type=type).aggregate(Sum('amount'))
+    def get_total_amount(cls, books: QuerySet):
+        return books.filter(type=1).aggregate(Sum('amount'))["amount__sum"],\
+            books.filter(type=2).aggregate(Sum('amount'))["amount__sum"]
 
     @classmethod
     def add(cls, account_book):
