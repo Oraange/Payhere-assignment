@@ -90,13 +90,13 @@ class DeleteBookService(PermissionService):
 
 class TrashBookService(PermissionService):
     def restore(self, book: BookIdDTO, user: User):
-        deleted_account_book = AccountBook.get_by_id(book.id, is_deleted=True)
-        if not deleted_account_book:
+        deleted_book = AccountBook.get_by_id(book.id, is_deleted=True)
+        if not deleted_book:
             raise AccountBookNotFound
 
-        super().is_authorized(deleted_account_book, user)
-        deleted_account_book.is_deleted = False
-        deleted_account_book.save()
+        super().is_authorized(deleted_book, user)
+        deleted_book.is_deleted = False
+        deleted_book.save()
 
     def get_trash_book_list(self, user, params: ParamsDTO):
         books = AccountBook.get_queryset_by_user(user, is_deleted=True)
@@ -106,6 +106,6 @@ class TrashBookService(PermissionService):
         book_list = [*books][params.offset:params.offset+params.limit]
 
         return TreshListOutputDTO(
-            account_books=[book.get_details() for book in book_list],
+            books=[book.get_details() for book in book_list],
             total_count=books.count()
         )
