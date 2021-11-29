@@ -35,6 +35,11 @@ class ParamsInputDTO:
 
 
 @dataclass
+class DeleteBookIdDTO:
+    id: int
+
+
+@dataclass
 class ReadAccountBookListOutputDTO:
     account_books: List[ReadAccountBookOutputDTO]
     total_income: int

@@ -6,16 +6,18 @@ from django.views import View
 from core.authorizations import authorize_for_user
 from .dto import (
     CreateAccoutBookInputDTO,
+    DeleteBookIdDTO,
     ParamsInputDTO, 
     UpdateAccountBookInputDTO, 
     ReadAccountBookListOutputDTO, 
     ReadAccountBookOutputDTO
 )
 from .service import (
-    CreateAccountBookService, 
-    UpdateAccountBookService, 
+    AccountBookDetailService,
     AccountBookListService,
-    AccountBookDetailService
+    CreateAccountBookService,
+    DeleteAccountBookService, 
+    UpdateAccountBookService 
 )
 from .exceptions import (
     AccountBookNotFound, 
@@ -84,12 +86,14 @@ class AccountBookView(View):
                         } for book in account_books.account_books
                     ]
                 }, status=200)
+    
 
 class AccountBookDetailView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.update_service = UpdateAccountBookService()
         self.get_service = AccountBookDetailService()
+        self.delete_service = DeleteAccountBookService()
 
     @authorize_for_user
     def put(self, request, book_id):
@@ -139,3 +143,19 @@ class AccountBookDetailView(View):
                     "category": account_book.category,
                     "memo": account_book.memo
                 }, status=200)
+
+    @authorize_for_user
+    def delete(self, reqeust, book_id):
+        user = reqeust.user
+        try:
+            id = DeleteBookIdDTO(id=book_id)
+            self.delete_service.remove(id, user)
+        
+        except AccountBookNotFound:
+            return JsonResponse({"message": "ACCOUNT_BOOK_DOES_NOT_EXIST"}, status=404)
+
+        except Forbidden:
+            return JsonResponse({"message": "FORBIDDEN"}, status=403)
+
+        else:
+            return HttpResponse(status=204)
