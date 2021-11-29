@@ -1,6 +1,4 @@
-from django.db.models.query import QuerySet
-
-from .models import AccountBook
+from .models import AccountBook, User
 from .dto import (
     CreateAccoutBookInputDTO,
     ReadAccountBookListOutputDTO, 
@@ -29,7 +27,7 @@ class CheckTypeValidation:
 
 
 class CheckAuthorizedUser:
-    def is_authorized(self, account_book, user):
+    def is_authorized(self, account_book: AccountBook, user: User):
         if str(account_book.user_id)!=str(user.id):
             raise Forbidden
 
@@ -49,9 +47,6 @@ class CreateAccountBookService(CheckTypeValidation):
 
 class UpdateAccountBookService(CheckTypeValidation, CheckAuthorizedUser):
     def get_account_book(self, book_id):
-        if not isinstance(book_id, int):
-            raise AccountBookValueTypeError
-        
         account_book = AccountBook.get_active_by_id(book_id)
         if not account_book:
             raise AccountBookNotFound
@@ -67,16 +62,14 @@ class UpdateAccountBookService(CheckTypeValidation, CheckAuthorizedUser):
         account_book.save()
 
 
-class AccountBookDetailService:
-    def get_account_book(self, book_id):
-        if not isinstance(book_id, int):
-            raise AccountBookValueTypeError
-
+class AccountBookDetailService(CheckAuthorizedUser):
+    def get_account_book(self, book_id: int, user: User):
         account_book = AccountBook.get_active_by_id(book_id)
         if not account_book:
             raise AccountBookNotFound
 
-        return account_book
+        super().is_authorized(account_book, user)
+        return account_book.get_details()
 
 
 class AccountBookListService:
@@ -91,7 +84,7 @@ class AccountBookListService:
 
         return ReadAccountBookListOutputDTO(
             account_books=[book.get_details() for book in book_list],
-            total_income=total_income,
-            total_outlay=total_outlay,
+            total_income=total_income["amount__sum"] or 0,
+            total_outlay=total_outlay["amount__sum"] or 0,
             total_count=book_queryset.count()
         )
