@@ -1,5 +1,5 @@
 import json
-from unittest import mock
+from unittest.mock import patch
 
 from django.test import TestCase, Client
 
@@ -12,7 +12,7 @@ class SignUpViewTest(TestCase):
         self.client = Client()
 
     def tearDown(self):
-        mock.patch.stopall()
+        patch.stopall()
 
     def test_post_sign_up_success(self):
         data = {
@@ -34,7 +34,7 @@ class SignUpViewTest(TestCase):
         self.assertEqual(response.json(), {"message": "KEY_ERROR"})
         self.assertEqual(response.status_code, 400)
 
-    @mock.patch.object(User, 'get_by_email')
+    @patch.object(User, 'get_by_email')
     def test_post_sign_up_duplicate_error(self, get_user):
         get_user.return_value = User(
             email="newUser@gmail.com",
