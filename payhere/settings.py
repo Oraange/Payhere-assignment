@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from my_settings import SECRET_KEY, DATABASES
+from my_settings import SECRET_KEY, DATABASES, SESSION_TIME_OUT
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,8 +21,6 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    #'django.contrib.admin',
-    #'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -37,8 +35,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'django.middleware.csrf.CsrfViewMiddleware',
-    #'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -134,12 +130,16 @@ CORS_ALLOW_HEADERS = (
     'accept-encoding',
     'authorization',
     'content-type',
+    'cookie'
     'dnt',
     'origin',
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
 )
+
+SESSION_COOKIE_AGE = SESSION_TIME_OUT
+SESSION_SAVE_EVERY_REQUEST = True
 
 # LOGGING = {
 #     'disable_existing_loggers': False,

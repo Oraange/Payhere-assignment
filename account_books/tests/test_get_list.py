@@ -14,13 +14,13 @@ class AccountBookListViewTest(TestCase):
     def setUp(self, get_user, get_qs):
         self.client = Client()
 
-        user_1 = User(
+        get_user.return_value = User(
             email="test1@test.com",
             password="test1234!@",
             nick_name="test_1"
         )
+        user_1 = get_user.return_value
         user_1.save()
-        get_user.return_value = user_1
         self.access_token = "Bearer " + jwt.encode({"id": str(user_1.id)}, SECRET_KEY, ALGORITHM)
         user_2 = User(
             email="test2@test.com",
@@ -59,6 +59,10 @@ class AccountBookListViewTest(TestCase):
         book_3.save()
         get_qs.return_value = AccountBook.objects.filter(id__in=[1,2,3])
         self.qs = get_qs.return_value.order_by('-updated_at')
+
+        session = self.client.session
+        session["user"]=str(user_1.id)
+        session.save()
 
     def tearDown(self):
         patch.stopall()

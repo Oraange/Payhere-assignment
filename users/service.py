@@ -1,7 +1,11 @@
 import bcrypt
 import jwt
 
-from users.exceptions import DuplicateUser, UserNotFound
+from users.exceptions import (
+    DuplicateUser,
+    RequiredLogIn,
+    UserNotFound
+)
 from .dto import SignUpInputDTO
 from .models import User
 from my_settings import SECRET_KEY, ALGORITHM
@@ -37,6 +41,11 @@ class SignInService:
     def check_password(self, plain_password, hashed_password):
         if not bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8")):
             raise UserNotFound
+
+
+class LogOutService:
+    def session_out(self, request):
+        del(request.session["user"])
 
 
 class TokenGenerator:

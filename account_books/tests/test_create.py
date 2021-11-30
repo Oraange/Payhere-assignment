@@ -12,15 +12,18 @@ class CreateAccountBookViewTest(TestCase):
     def setUp(self, get_user):
         self.client = Client()
     
-        get_user.return_value = user_1 = User(
+        get_user.return_value = User(
             email="test@gmail.com",
             password="test123!@",
             nick_name="test_user_1"
         )
         get_user.return_value.save()
+        user_1 = get_user.return_value
 
         self.access_token = "Bearer " + jwt.encode({"id": str(user_1.id)}, SECRET_KEY, ALGORITHM)
-
+        session = self.client.session
+        session["user"]=str(user_1.id)
+        session.save()
 
     def tearDown(self):
         User.objects.all().delete()
@@ -32,7 +35,9 @@ class CreateAccountBookViewTest(TestCase):
             "category" : "편의점",
             "memo" : "삼각김밥"
         }
-        header = {'HTTP_Authorization': self.access_token}
+        header = {
+            'HTTP_Authorization': self.access_token,
+        }
         response = self.client.post('/account-books', json.dumps(data), content_type="application/json", **header)
         self.assertEqual(response.json(), {"message": "CREATED"})
         self.assertEqual(response.status_code, 201)

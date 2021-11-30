@@ -22,10 +22,10 @@ class UpdateAccountBookViewTest(TestCase):
             ).decode("utf-8"),
             nick_name="testUser"
         )
-        user_id = str(get_user.return_value.id)
-        get_user.return_value.save()
+        user_1 = get_user.return_value
+        user_1.save()
         
-        self.access_token = "Bearer " + jwt.encode({"id": user_id}, SECRET_KEY, ALGORITHM)
+        self.access_token = "Bearer " + jwt.encode({"id": str(user_1.id)}, SECRET_KEY, ALGORITHM)
 
         get_book.return_value = AccountBook(
             type=AccountBook.Type.INCOME.value,
@@ -36,6 +36,10 @@ class UpdateAccountBookViewTest(TestCase):
         )
         get_book.return_value.save()
         self.book = get_book.return_value
+
+        session = self.client.session
+        session["user"]=str(user_1.id)
+        session.save()
 
     def tearDown(self):
         patch.stopall()
